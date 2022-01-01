@@ -1,0 +1,16 @@
+[package]
+name = "satisfactorized"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.52"
+clap = { version = "3.0.0-rc.11", features = ["derive"] }
+dispose = "0.4.0"
+docbot = { version = "=0.2.0-alpha.1", path = "docbot/src/docbot" }
+env_logger = "0.9.0"
+log = "0.4.14"
+rustyline = "9.1.1"
+serde = { version = "1.0.132", features = ["derive"] }
+serde_yaml = "0.8.23"
+topograph = "0.2.1-alpha.1"

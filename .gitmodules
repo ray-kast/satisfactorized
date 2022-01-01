@@ -1,0 +1,3 @@
+[submodule "docbot"]
+	path = docbot
+	url = git@github.com:ray-kast/docbot.git
