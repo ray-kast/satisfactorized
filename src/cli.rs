@@ -4,6 +4,6 @@ use clap::Parser;
 
 #[derive(Parser)]
 pub struct Opts {
-    #[clap(short, long, default_value = "config.yaml")]
+    #[clap(short, long, default_value = "config.yml")]
     pub config: PathBuf,
 }

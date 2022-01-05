@@ -1,6 +1,9 @@
 use std::{fmt, fmt::Write};
 
-use crate::prelude::*;
+use crate::{
+    items::{Amount, Item},
+    prelude::*,
+};
 
 #[derive(Docbot, Debug)]
 pub enum BaseCommand {
@@ -8,9 +11,17 @@ pub enum BaseCommand {
     /// Add an item to the selected outputs
     ///
     /// # Arguments
-    /// item: The name of the item
+    /// item: The name of the item to add
     /// amount: The amount requested (default 1)
-    Want(String, Option<f64>),
+    Want(Item, Option<Amount>),
+
+    /// `(unwant|remove|rm) <item> [amount]`
+    /// Remove some or all of an item from the selected outputs
+    ///
+    /// # Arguments
+    /// item: The name of the item to remove
+    /// amount: The amount to remove (default all)
+    Unwant(Item, Option<Amount>),
 
     /// `calculate`
     /// Compute the build strategy for the currently selected outputs
@@ -90,7 +101,7 @@ impl FoldError for FormatError {
     }
 
     fn other(&self, error: docbot::Anyhow) -> Formatted {
-        Ok(format!("Unexpected error: {:?}", error))
+        Ok(format!("{:?}", error))
     }
 }
 

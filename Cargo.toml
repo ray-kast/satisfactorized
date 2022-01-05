@@ -4,13 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ahash = "0.7.6"
 anyhow = "1.0.52"
 clap = { version = "3.0.0-rc.11", features = ["derive"] }
 dispose = "0.4.0"
 docbot = { version = "=0.2.0-alpha.1", path = "docbot/src/docbot" }
 env_logger = "0.9.0"
+lazy_static = "1.4.0"
 log = "0.4.14"
+num-derive = "0.3.3"
+num-traits = "0.2.14"
+ordered-float = "2.8.0"
+parking_lot = "0.11.2"
+rand = "0.8.4"
+regex = "1.5.4"
 rustyline = "9.1.1"
 serde = { version = "1.0.132", features = ["derive"] }
 serde_yaml = "0.8.23"
-topograph = "0.2.1-alpha.1"
+thiserror = "1.0.30"
