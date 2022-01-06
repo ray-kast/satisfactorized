@@ -2,9 +2,15 @@ mod command;
 mod readline;
 
 use command::BaseCommand;
+use num_traits::identities::one;
 use readline::Editor;
 
-use crate::{cli::Opts, config::Config, prelude::*};
+use crate::{
+    cli::Opts,
+    config::Config,
+    items::{ItemStack, ItemStacks},
+    prelude::*,
+};
 
 pub fn run(opts: Opts) -> Result<()> {
     let Opts { config } = opts;
@@ -54,8 +60,10 @@ pub fn run(opts: Opts) -> Result<()> {
             },
         };
 
-        if let Ok(next) =
-            handle_cmd(cmd, state.clone()).map_err(|e| error!("Command failed: {:?}", e))
+        if let Ok(next) = state
+            .clone()
+            .handle_cmd(cmd)
+            .map_err(|e| error!("Command failed: {:?}", e))
         {
             state = next;
         }
@@ -64,21 +72,27 @@ pub fn run(opts: Opts) -> Result<()> {
 
 #[derive(Clone)]
 struct State {
-    want: (),
+    want: ItemStacks,
 }
 
 impl State {
-    fn new() -> Self { Self { want: () } }
-}
-
-fn handle_cmd(cmd: BaseCommand, mut state: State) -> Result<State> {
-    use BaseCommand::*;
-
-    match cmd {
-        Want(item, amt) => {},
-        Unwant(item, amt) => {},
-        Calculate => {},
+    fn new() -> Self {
+        Self {
+            want: ItemStacks::empty(),
+        }
     }
 
-    Ok(state)
+    fn handle_cmd(mut self, cmd: BaseCommand) -> Result<Self> {
+        match cmd {
+            BaseCommand::Want(item, amt) => self.want += ItemStack(item, amt.unwrap_or_else(one)),
+            // TODO: add and use a saturating_remove for this
+            BaseCommand::Unwant(item, amt) => self
+                .want
+                .try_remove_one(ItemStack(item, amt.unwrap_or_else(one)))
+                .context("Failed to remove item from wanted list")?,
+            BaseCommand::Calculate => todo!(),
+        }
+
+        Ok(self)
+    }
 }

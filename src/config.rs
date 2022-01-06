@@ -1,3 +1,11 @@
+use std::{fs::File, path::Path, sync::Arc};
+
+use crate::{
+    items::{Amount, Item, ItemStacks, Machine},
+    prelude::*,
+    HashMap, HashSet,
+};
+
 mod format {
     use std::fmt;
 
@@ -28,7 +36,9 @@ mod format {
         pub name: Option<String>,
     }
 
+    #[derive(Debug)]
     pub struct Items(pub Vec<Item>);
+    #[derive(Debug)]
     pub struct Item(pub Amount, pub String);
 
     impl TryFrom<Items> for ItemStacks {
@@ -135,18 +145,11 @@ mod format {
     }
 }
 
-use std::{fs::File, path::Path};
-
-use crate::{
-    items::{Amount, Item, ItemStacks, Machine},
-    prelude::*,
-    HashSet,
-};
-
 #[derive(Debug)]
 pub struct Config {
     raw: HashSet<Item>,
-    recipes: Vec<Recipe>,
+    recipes: Vec<Arc<Recipe>>,
+    keyed_recipes: HashMap<Item, Vec<KeyedRecipe>>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -156,6 +159,13 @@ pub struct Recipe {
     time: Amount,
     machine: Machine,
     name: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct KeyedRecipe {
+    amount: Amount,
+    extra_outs: ItemStacks,
+    recipe: Arc<Recipe>,
 }
 
 impl Config {
@@ -173,6 +183,41 @@ impl Config {
 
         Machine::registry_ref().register(ret.recipes.keys().cloned());
 
+        let recipes: Vec<Arc<Recipe>> = ret
+            .recipes
+            .into_iter()
+            .flat_map(|(k, v)| {
+                v.into_iter()
+                    .zip(std::iter::repeat(k))
+                    .map(|(recipe, machine)| {
+                        Ok(Recipe {
+                            inputs: recipe.from.try_into()?,
+                            outputs: recipe.make.try_into().unwrap(),
+                            time: recipe.in_sec,
+                            machine: machine.try_into().unwrap(),
+                            name: recipe.name,
+                        })
+                    })
+            })
+            .map(|r| r.map(Arc::new))
+            .collect::<Result<_>>()?;
+
+        let keyed_recipes: HashMap<Item, Vec<KeyedRecipe>> = recipes
+            .iter()
+            .flat_map(|recipe| {
+                recipe.outputs.stacks_iter().map(|stack| {
+                    (stack.0, KeyedRecipe {
+                        amount: stack.1,
+                        extra_outs: recipe.outputs.clone() - stack,
+                        recipe: recipe.clone(),
+                    })
+                })
+            })
+            .fold(HashMap::default(), |mut h, (k, v)| {
+                h.entry(k).or_insert_with(Vec::new).push(v);
+                h
+            });
+
         Ok(Config {
             raw: ret
                 .raw
@@ -180,21 +225,8 @@ impl Config {
                 .map(|s| Item::new(&s))
                 .collect::<Result<_, _>>()
                 .unwrap(),
-            recipes: ret
-                .recipes
-                .into_iter()
-                .flat_map(|(k, v)| {
-                    v.into_iter()
-                        .zip(std::iter::repeat(k))
-                        .map(|(recipe, machine)| Ok(Recipe {
-                            inputs: recipe.from.try_into()?,
-                            outputs: recipe.make.try_into().unwrap(),
-                            time: recipe.in_sec,
-                            machine: machine.try_into().unwrap(),
-                            name: recipe.name,
-                        }))
-                })
-                .collect::<Result<_>>()?,
+            recipes,
+            keyed_recipes,
         })
     }
 }

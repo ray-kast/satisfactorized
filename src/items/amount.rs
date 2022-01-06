@@ -42,12 +42,21 @@ impl Amount {
 
     pub fn checked_sub(self, rhs: Amount) -> Option<Self> { Self::new_not_nan(self.0 - rhs.0).ok() }
 
-    #[inline(always)]
-    fn debug_assert(&self) {
+    #[inline]
+    fn mutate<T>(&mut self, f: impl FnOnce(&mut NotNan<f64>) -> T) -> T {
+        let ret = f(&mut self.0);
+
         debug_assert!(
             !self.0.is_sign_negative(),
             "Amount produced with invalid value!"
         );
+
+        ret
+    }
+
+    fn with(mut self, f: impl FnOnce(&mut Self)) -> Self {
+        f(&mut self);
+        self
     }
 }
 
@@ -70,10 +79,7 @@ impl<'de> de::Deserialize<'de> for Amount {
 }
 
 impl AddAssign<Amount> for Amount {
-    fn add_assign(&mut self, rhs: Amount) {
-        self.0 += rhs.0;
-        self.debug_assert();
-    }
+    fn add_assign(&mut self, rhs: Amount) { self.mutate(|f| *f += rhs.0) }
 }
 
 impl SubAssign<Amount> for Amount {
@@ -81,37 +87,57 @@ impl SubAssign<Amount> for Amount {
 }
 
 impl MulAssign<Amount> for Amount {
-    fn mul_assign(&mut self, rhs: Amount) {
-        self.0 *= rhs.0;
-        self.debug_assert();
-    }
+    fn mul_assign(&mut self, rhs: Amount) { self.mutate(|f| *f *= rhs.0) }
 }
-
-// TODO: macro all this below
 
 impl Add<Amount> for Amount {
     type Output = Self;
 
-    fn add(mut self, rhs: Self) -> Self {
-        self += rhs;
-        self
-    }
+    fn add(self, rhs: Self) -> Self { self.with(|s| *s += rhs) }
 }
 
 impl Sub<Amount> for Amount {
     type Output = Self;
 
-    fn sub(mut self, rhs: Self) -> Self {
-        self -= rhs;
-        self
-    }
+    fn sub(self, rhs: Self) -> Self { self.with(|s| *s -= rhs) }
 }
 
 impl Mul<Amount> for Amount {
     type Output = Self;
 
-    fn mul(mut self, rhs: Self) -> Self {
-        self *= rhs;
-        self
-    }
+    fn mul(self, rhs: Self) -> Self { self.with(|s| *s *= rhs) }
 }
+
+macro_rules! auto_impls {
+    ($ty:ty, $op:ident, $fn:ident, $op_asn:ident, $fn_asn:ident) => {
+        impl $op<&$ty> for $ty {
+            type Output = $ty;
+
+            #[inline]
+            fn $fn(self, rhs: &$ty) -> $ty { self.$fn(*rhs) }
+        }
+
+        impl<'a> $op<$ty> for &'a $ty {
+            type Output = $ty;
+
+            #[inline]
+            fn $fn(self, rhs: $ty) -> $ty { (*self).$fn(rhs) }
+        }
+
+        impl<'a> $op<&$ty> for &'a $ty {
+            type Output = $ty;
+
+            #[inline]
+            fn $fn(self, rhs: &$ty) -> $ty { (*self).$fn(*rhs) }
+        }
+
+        impl $op_asn<&$ty> for $ty {
+            #[inline]
+            fn $fn_asn(&mut self, rhs: &$ty) { self.$fn_asn(*rhs) }
+        }
+    };
+}
+
+auto_impls!(Amount, Add, add, AddAssign, add_assign);
+auto_impls!(Amount, Sub, sub, SubAssign, sub_assign);
+auto_impls!(Amount, Mul, mul, MulAssign, mul_assign);

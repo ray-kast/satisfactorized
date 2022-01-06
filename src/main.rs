@@ -1,3 +1,6 @@
+#![deny(clippy::suspicious, clippy::style, missing_debug_implementations)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 #![feature(hash_drain_filter)]
 
 mod atom;

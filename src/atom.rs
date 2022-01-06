@@ -43,6 +43,7 @@ where T::Value: fmt::Debug + Clone + Eq + Hash
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub struct Registry<T: Memoized>(RwLock<RegistryInner<T>>);
 
 pub struct RegistryInner<T: Memoized> {
@@ -59,6 +60,10 @@ impl<T: Memoized> Registry<T> {
             rev: HashMap::default(),
         }))
     }
+}
+
+impl<T: Memoized> Default for Registry<T> {
+    fn default() -> Self { Self::new() }
 }
 
 impl<T: Memoized> Registry<T>
