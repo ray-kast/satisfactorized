@@ -115,15 +115,27 @@ impl SubAssign<&ItemStacks> for ItemStacks {
 }
 
 impl Add<ItemStack> for ItemStacks {
-    type Output = ItemStacks;
+    type Output = Self;
 
-    fn add(self, rhs: ItemStack) -> Self { self.with(|s| *s += rhs) }
+    fn add(self, rhs: ItemStack) -> Self { self.with(|s| s.add_assign(rhs)) }
+}
+
+impl Add<&ItemStacks> for ItemStacks {
+    type Output = Self;
+
+    fn add(self, rhs: &ItemStacks) -> Self { self.with(|s| s.add_assign(rhs)) }
 }
 
 impl Sub<ItemStack> for ItemStacks {
-    type Output = ItemStacks;
+    type Output = Self;
 
-    fn sub(self, rhs: ItemStack) -> Self { self.with(|s| *s += rhs) }
+    fn sub(self, rhs: ItemStack) -> Self { self.with(|s| s.sub_assign(rhs)) }
+}
+
+impl Sub<&ItemStacks> for ItemStacks {
+    type Output = Self;
+
+    fn sub(self, rhs: &ItemStacks) -> Self { self.with(|s| s.sub_assign(rhs)) }
 }
 
 macro_rules! auto_impls {
@@ -140,18 +152,34 @@ macro_rules! auto_impls {
             fn $fn(self, rhs: $ty) -> $ty { rhs.$fn(self) }
         }
 
+        impl $op<$ty> for &$ty {
+            type Output = $ty;
+
+            fn $fn(self, rhs: $ty) -> $ty { rhs.$fn(self) }
+        }
+
         auto_impls!($ty, $i, $op, $fn, $op_asn, $fn_asn);
     };
 
     ($ty:ty, $i:ty, $op:ident, $fn:ident, $op_asn:ident, $fn_asn:ident) => {
+        impl $op_asn<&$i> for $ty {
+            fn $fn_asn(&mut self, rhs: &$i) { self.$fn_asn(*rhs) }
+        }
+
+        impl $op_asn<$ty> for $ty {
+            fn $fn_asn(&mut self, rhs: $ty) { self.$fn_asn(&rhs) }
+        }
+
         impl $op<&$i> for $ty {
             type Output = $ty;
 
             fn $fn(self, rhs: &$i) -> $ty { self.$fn(*rhs) }
         }
 
-        impl $op_asn<&$i> for $ty {
-            fn $fn_asn(&mut self, rhs: &$i) { self.$fn_asn(*rhs) }
+        impl $op<$ty> for $ty {
+            type Output = $ty;
+
+            fn $fn(self, rhs: $ty) -> $ty { self.$fn(&rhs) }
         }
     };
 }

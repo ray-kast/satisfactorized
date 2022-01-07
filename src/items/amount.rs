@@ -93,19 +93,19 @@ impl MulAssign<Amount> for Amount {
 impl Add<Amount> for Amount {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Self { self.with(|s| *s += rhs) }
+    fn add(self, rhs: Self) -> Self { self.with(|s| s.add_assign(rhs)) }
 }
 
 impl Sub<Amount> for Amount {
     type Output = Self;
 
-    fn sub(self, rhs: Self) -> Self { self.with(|s| *s -= rhs) }
+    fn sub(self, rhs: Self) -> Self { self.with(|s| s.sub_assign(rhs)) }
 }
 
 impl Mul<Amount> for Amount {
     type Output = Self;
 
-    fn mul(self, rhs: Self) -> Self { self.with(|s| *s *= rhs) }
+    fn mul(self, rhs: Self) -> Self { self.with(|s| s.mul_assign(rhs)) }
 }
 
 macro_rules! auto_impls {

@@ -23,6 +23,10 @@ pub enum BaseCommand {
     /// amount: The amount to remove (default all)
     Unwant(Item, Option<Amount>),
 
+    /// `show`
+    /// Show the current configuration
+    Show,
+
     /// `calculate`
     /// Compute the build strategy for the currently selected outputs
     Calculate,

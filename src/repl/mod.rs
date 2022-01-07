@@ -70,7 +70,7 @@ pub fn run(opts: Opts) -> Result<()> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct State {
     want: ItemStacks,
 }
@@ -90,6 +90,7 @@ impl State {
                 .want
                 .try_remove_one(ItemStack(item, amt.unwrap_or_else(one)))
                 .context("Failed to remove item from wanted list")?,
+            BaseCommand::Show => println!("{:#?}", self),
             BaseCommand::Calculate => todo!(),
         }
 
